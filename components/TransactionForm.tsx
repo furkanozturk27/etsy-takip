@@ -3,16 +3,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { X, Loader2, Save } from 'lucide-react';
-import { Store, BusinessModel, Category } from '@/types';
+import { Store, BusinessModel, Category, Transaction } from '@/types';
 import { USD_TRY_RATE } from '@/lib/utils';
 
 interface TransactionFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialData?: Transaction | any;
 }
 
-export default function TransactionForm({ isOpen, onClose, onSuccess }: TransactionFormProps) {
+export default function TransactionForm({ isOpen, onClose, onSuccess, initialData }: TransactionFormProps) {
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false); // Dropdown verileri yükleniyor mu?
   const [stores, setStores] = useState<Store[]>([]);
@@ -28,6 +29,30 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
   const [modelId, setModelId] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Form'u initialData ile doldur
+  useEffect(() => {
+    if (isOpen && initialData) {
+      setType(initialData.type);
+      setAmount(initialData.amount?.toString() || '');
+      setCurrency(initialData.currency || 'USD');
+      setCategory(initialData.category || '');
+      setStoreId(initialData.store_id || '');
+      setModelId(initialData.business_model_id || '');
+      setDescription(initialData.description || '');
+      setDate(initialData.transaction_date || new Date().toISOString().split('T')[0]);
+    } else if (isOpen && !initialData) {
+      // Yeni ekleme modunda formu sıfırla
+      setType('expense');
+      setAmount('');
+      setCurrency('USD');
+      setCategory('');
+      setStoreId('');
+      setModelId('');
+      setDescription('');
+      setDate(new Date().toISOString().split('T')[0]);
+    }
+  }, [isOpen, initialData]);
 
   // Dropdown verilerini çek (Her açılışta taze veri)
   useEffect(() => {
@@ -52,8 +77,8 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
 
           if (storesData) {
             setStores(storesData as any);
-            // Eğer daha önce seçili bir mağaza yoksa ilkini seç
-            if (!storeId && storesData.length > 0) setStoreId(storesData[0].id);
+            // Eğer daha önce seçili bir mağaza yoksa ve initialData yoksa ilkini seç
+            if (!storeId && !initialData && storesData.length > 0) setStoreId(storesData[0].id);
           }
 
           if (modelsData) {
@@ -63,8 +88,8 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
 
           if (categoriesData) {
             setCategories(categoriesData as any);
-            // Kategori varsayılanını ayarla
-            if (!category) {
+            // Kategori varsayılanını ayarla (sadece yeni ekleme modunda)
+            if (!category && !initialData) {
               const defaultCategory = categoriesData.find(
                 c => (type === 'income' && (c.type === 'income' || c.type === 'both')) ||
                      (type === 'expense' && (c.type === 'expense' || c.type === 'both'))
@@ -119,7 +144,7 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
         amountBaseCurrency = amountValue / exchangeRate;
       }
 
-      const { error } = await supabase.from('transactions').insert({
+      const transactionData = {
         type,
         amount: amountValue,
         currency,
@@ -129,14 +154,30 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
         business_model_id: modelId || null, // Boş string ise null gönder
         description,
         transaction_date: date,
-      });
+      };
 
-      if (error) throw error;
+      if (initialData) {
+        // Update işlemi
+        const { error } = await supabase
+          .from('transactions')
+          .update(transactionData)
+          .eq('id', initialData.id);
+
+        if (error) throw error;
+      } else {
+        // Insert işlemi
+        const { error } = await supabase.from('transactions').insert(transactionData);
+
+        if (error) throw error;
+      }
+
       onSuccess();
       onClose();
       // Reset form (opsiyonel)
-      setAmount('');
-      setDescription('');
+      if (!initialData) {
+        setAmount('');
+        setDescription('');
+      }
     } catch (error: any) {
       console.error('Kaydetme hatası:', error);
       alert('Kaydedilirken bir hata oluştu: ' + (error?.message || 'Bilinmeyen hata'));
@@ -153,7 +194,7 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
         
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-border bg-muted/20">
-          <h2 className="text-xl font-bold">Yeni İşlem Ekle</h2>
+          <h2 className="text-xl font-bold">{initialData ? 'İşlemi Düzenle' : 'Yeni İşlem Ekle'}</h2>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-full transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -322,7 +363,7 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 mt-4"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-            {type === 'income' ? 'Geliri Kaydet' : 'Gideri Kaydet'}
+            {initialData ? 'Güncelle' : (type === 'income' ? 'Geliri Kaydet' : 'Gideri Kaydet')}
           </button>
 
         </form>

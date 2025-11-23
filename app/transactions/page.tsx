@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Plus, Loader2, Trash2, Wallet, ArrowUpRight, ArrowDownRight, DollarSign, Filter } from 'lucide-react';
+import { Plus, Loader2, Trash2, Wallet, ArrowUpRight, ArrowDownRight, DollarSign, Filter, Pencil } from 'lucide-react';
 import { Transaction, Store, BusinessModel } from '@/types';
 import TransactionForm from '@/components/TransactionForm';
 import { startOfMonth, endOfMonth, subMonths, subDays, startOfYear, startOfDay, endOfDay } from 'date-fns';
@@ -17,6 +17,7 @@ export default function TransactionsPage() {
   const [models, setModels] = useState<BusinessModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   // Filtreler
   const [dateRange, setDateRange] = useState<DateRangeFilter>('thisMonth');
@@ -185,7 +186,10 @@ export default function TransactionsPage() {
           <p className="text-muted-foreground mt-2">Tüm işlemlerinizi filtreleyin ve analiz edin.</p>
         </div>
         <button 
-          onClick={() => setIsFormOpen(true)}
+          onClick={() => {
+            setEditingTransaction(null);
+            setIsFormOpen(true);
+          }}
           className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-lg shadow-primary/20"
         >
           <Plus className="w-5 h-5" />
@@ -367,13 +371,25 @@ export default function TransactionsPage() {
                       {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount, t.currency)}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleDelete(t.id)}
-                        className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors"
-                        title="Sil"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingTransaction(t);
+                            setIsFormOpen(true);
+                          }}
+                          className="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors"
+                          title="Düzenle"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(t.id)}
+                          className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors"
+                          title="Sil"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                   );
@@ -387,8 +403,12 @@ export default function TransactionsPage() {
       {/* FORM MODAL */}
       <TransactionForm 
         isOpen={isFormOpen} 
-        onClose={() => setIsFormOpen(false)} 
-        onSuccess={fetchData} 
+        onClose={() => {
+          setIsFormOpen(false);
+          setEditingTransaction(null);
+        }} 
+        onSuccess={fetchData}
+        initialData={editingTransaction}
       />
 
     </div>
