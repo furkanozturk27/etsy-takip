@@ -325,17 +325,28 @@ export default function TransactionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {transactions.map((t) => (
-                  <tr key={t.id} className="hover:bg-muted/50 transition-colors">
+                {transactions.map((t) => {
+                  // Otomatik Sabit Gider kontrolü (description'da "(Otomatik Sabit Gider)" varsa)
+                  const isRecurring = t.description?.includes('(Otomatik Sabit Gider)') || false;
+                  
+                  return (
+                  <tr 
+                    key={t.id} 
+                    className={`transition-colors ${
+                      isRecurring
+                        ? 'bg-yellow-500/10 hover:bg-yellow-500/20 border-l-4 border-l-yellow-500'
+                        : 'hover:bg-muted/50'
+                    }`}
+                  >
                     <td className="px-6 py-4 font-medium">{formatDate(t.transaction_date)}</td>
                     <td className="px-6 py-4">
                       <span className="text-muted-foreground">
-                        {(t.store as any)?.name || '-'}
+                        {(t.stores as any)?.name || (t.store as any)?.name || '-'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-muted-foreground">
-                        {(t.business_model as any)?.name || '-'}
+                        {(t.business_models as any)?.name || (t.business_model as any)?.name || '-'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -346,7 +357,13 @@ export default function TransactionsPage() {
                     <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">
                       {t.description || '-'}
                     </td>
-                    <td className={`px-6 py-4 text-right font-bold ${t.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                    <td className={`px-6 py-4 text-right font-bold ${
+                      isRecurring 
+                        ? 'text-yellow-500' 
+                        : t.type === 'income' 
+                          ? 'text-income' 
+                          : 'text-expense'
+                    }`}>
                       {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount, t.currency)}
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -359,7 +376,8 @@ export default function TransactionsPage() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}

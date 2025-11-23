@@ -21,7 +21,28 @@ CREATE TABLE business_models (
     description TEXT
 );
 
--- 3. RECURRING EXPENSES (Sabit Giderler: Canva, Netflix vb.)
+-- 3. CATEGORIES (Kategoriler)
+CREATE TABLE IF NOT EXISTS categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL UNIQUE,
+    type TEXT CHECK (type IN ('income', 'expense', 'both')) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Var olan sabit kategorileri (şimdilik) expense olarak ekleyelim
+INSERT INTO categories (name, type) VALUES 
+('Malzeme / Hammadde', 'expense'), 
+('Kargo & Lojistik', 'expense'),
+('Reklam (Etsy/Meta)', 'expense'),
+('Platform Komisyonu', 'expense'),
+('Yazılım & Üyelik', 'expense'),
+('Vergi', 'expense'),
+('Sales', 'income'),
+('Refund', 'income'),
+('Other', 'both')
+ON CONFLICT (name) DO NOTHING;
+
+-- 4. RECURRING EXPENSES (Sabit Giderler: Canva, Netflix vb.)
 -- Bunlar her ay otomatik hesaplanacak kalemlerdir.
 CREATE TABLE recurring_expenses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -34,7 +55,7 @@ CREATE TABLE recurring_expenses (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 4. TRANSACTIONS (Tüm Gelir ve Giderler)
+-- 5. TRANSACTIONS (Tüm Gelir ve Giderler)
 CREATE TABLE transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     store_id UUID REFERENCES stores(id) ON DELETE SET NULL, -- Bir mağazaya bağlı olabilir
@@ -52,7 +73,7 @@ CREATE TABLE transactions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 5. PRODUCT IDEAS / TASKS (Hedef Ürünler)
+-- 6. PRODUCT IDEAS / TASKS (Hedef Ürünler)
 CREATE TABLE product_ideas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     store_id UUID REFERENCES stores(id) ON DELETE CASCADE,
@@ -73,4 +94,5 @@ CREATE INDEX idx_product_ideas_score ON product_ideas(expectation_score DESC);
 CREATE INDEX idx_product_ideas_status ON product_ideas(status);
 CREATE INDEX idx_product_ideas_store ON product_ideas(store_id);
 CREATE INDEX idx_recurring_expenses_active ON recurring_expenses(is_active) WHERE is_active = TRUE;
+CREATE INDEX idx_categories_type ON categories(type);
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { X, Loader2, Save } from 'lucide-react';
-import { Store, BusinessModel } from '@/types';
+import { Store, BusinessModel, Category } from '@/types';
 import { USD_TRY_RATE } from '@/lib/utils';
 
 interface TransactionFormProps {
@@ -17,6 +17,7 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
   const [dataLoading, setDataLoading] = useState(false); // Dropdown verileri yükleniyor mu?
   const [stores, setStores] = useState<Store[]>([]);
   const [allModels, setAllModels] = useState<BusinessModel[]>([]); // Tüm modeller
+  const [categories, setCategories] = useState<Category[]>([]); // Kategoriler
   
   // Form State
   const [type, setType] = useState<'income' | 'expense'>('expense');
@@ -42,6 +43,13 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
           const { data: modelsData, error: modelError } = await supabase.from('business_models').select('*').order('name');
           if (modelError) console.error("Model Fetch Error:", modelError);
 
+          // Kategorileri Çek
+          const { data: categoriesData, error: categoryError } = await supabase
+            .from('categories')
+            .select('*')
+            .order('name');
+          if (categoryError) console.error("Category Fetch Error:", categoryError);
+
           if (storesData) {
             setStores(storesData as any);
             // Eğer daha önce seçili bir mağaza yoksa ilkini seç
@@ -52,10 +60,19 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
             setAllModels(modelsData as any);
             // Model seçimi zorunlu değil, o yüzden otomatik seçmeye gerek yok ama state'i güncelle
           }
-          
-          // Kategori varsayılanını ayarla
-          if (!category) {
-            setCategory(type === 'income' ? 'Sales' : 'Material');
+
+          if (categoriesData) {
+            setCategories(categoriesData as any);
+            // Kategori varsayılanını ayarla
+            if (!category) {
+              const defaultCategory = categoriesData.find(
+                c => (type === 'income' && (c.type === 'income' || c.type === 'both')) ||
+                     (type === 'expense' && (c.type === 'expense' || c.type === 'both'))
+              );
+              if (defaultCategory) {
+                setCategory(defaultCategory.name);
+              }
+            }
           }
 
         } catch (error) {
@@ -75,6 +92,15 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
       return model.type === 'income' || model.type === 'both';
     } else {
       return model.type === 'expense' || model.type === 'both';
+    }
+  });
+
+  // Kategorileri type'a göre filtrele
+  const filteredCategories = categories.filter(cat => {
+    if (type === 'income') {
+      return cat.type === 'income' || cat.type === 'both';
+    } else {
+      return cat.type === 'expense' || cat.type === 'both';
     }
   });
 
@@ -140,8 +166,10 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
             <button
               type="button"
               onClick={() => { 
-                setType('income'); 
-                setCategory('Sales');
+                setType('income');
+                // İlk uygun kategoriyi seç
+                const firstIncomeCategory = categories.find(c => c.type === 'income' || c.type === 'both');
+                if (firstIncomeCategory) setCategory(firstIncomeCategory.name);
                 setModelId(''); // Type değişince model seçimini sıfırla
               }}
               className={`py-2 text-sm font-medium rounded-md transition-all ${type === 'income' ? 'bg-green-600 text-white shadow' : 'text-muted-foreground hover:text-foreground'}`}
@@ -151,8 +179,10 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
             <button
               type="button"
               onClick={() => { 
-                setType('expense'); 
-                setCategory('Material');
+                setType('expense');
+                // İlk uygun kategoriyi seç
+                const firstExpenseCategory = categories.find(c => c.type === 'expense' || c.type === 'both');
+                if (firstExpenseCategory) setCategory(firstExpenseCategory.name);
                 setModelId(''); // Type değişince model seçimini sıfırla
               }}
               className={`py-2 text-sm font-medium rounded-md transition-all ${type === 'expense' ? 'bg-red-600 text-white shadow' : 'text-muted-foreground hover:text-foreground'}`}
@@ -212,28 +242,21 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground">Kategori</label>
-              <select 
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary"
-              >
-                {type === 'income' ? (
-                  <>
-                    <option value="Sales">Ürün Satışı</option>
-                    <option value="Refund">İade Geliri</option>
-                    <option value="Other">Diğer Gelir</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="Material">Malzeme / Hammadde</option>
-                    <option value="Shipping">Kargo & Lojistik</option>
-                    <option value="Ads">Reklam (Etsy/Meta)</option>
-                    <option value="Fees">Platform Komisyonu</option>
-                    <option value="Software">Yazılım & Üyelik</option>
-                    <option value="Tax">Vergi</option>
-                  </>
-                )}
-              </select>
+              {dataLoading ? (
+                <div className="h-10 w-full bg-muted animate-pulse rounded-lg" />
+              ) : (
+                <select 
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary"
+                  required
+                >
+                  {filteredCategories.length === 0 && <option value="">Kategori Bulunamadı</option>}
+                  {filteredCategories.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground">Tarih</label>

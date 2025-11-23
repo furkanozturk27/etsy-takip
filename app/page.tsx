@@ -391,32 +391,45 @@ export default function Dashboard() {
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                    {filteredTransactions.map((t) => (
-                    <tr 
-                      key={t.id} 
-                      className={`transition-colors ${
-                        t.type === 'income' 
-                          ? 'bg-green-500/5 hover:bg-green-500/10 border-l-4 border-l-green-500' 
-                          : 'bg-red-500/5 hover:bg-red-500/10 border-l-4 border-l-red-500'
-                      }`}
-                    >
-                        <td className="px-6 py-4 font-medium">{formatDate(t.transaction_date)}</td>
-                        <td className="px-6 py-4">
-                        <span className="px-2 py-1 rounded-full bg-secondary text-xs border">
-                            {t.category}
-                        </span>
-                        </td>
-                        <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">
-                            {t.description || '-'}
-                        </td>
-                        <td className="px-6 py-4">
-                        {t.type === 'income' ? 'Gelir' : 'Gider'}
-                        </td>
-                        <td className={`px-6 py-4 text-right font-bold ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
-                        {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount, t.currency)}
-                        </td>
-                    </tr>
-                    ))}
+                    {filteredTransactions.map((t) => {
+                      // Otomatik Sabit Gider kontrolü (description'da "(Otomatik Sabit Gider)" varsa)
+                      const isRecurring = t.description?.includes('(Otomatik Sabit Gider)') || false;
+                      
+                      return (
+                      <tr 
+                        key={t.id} 
+                        className={`transition-colors ${
+                          isRecurring
+                            ? 'bg-yellow-500/10 hover:bg-yellow-500/20 border-l-4 border-l-yellow-500'
+                            : t.type === 'income' 
+                              ? 'bg-green-500/5 hover:bg-green-500/10 border-l-4 border-l-green-500' 
+                              : 'bg-red-500/5 hover:bg-red-500/10 border-l-4 border-l-red-500'
+                        }`}
+                      >
+                          <td className="px-6 py-4 font-medium">{formatDate(t.transaction_date)}</td>
+                          <td className="px-6 py-4">
+                          <span className="px-2 py-1 rounded-full bg-secondary text-xs border">
+                              {t.category}
+                          </span>
+                          </td>
+                          <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">
+                              {t.description || '-'}
+                          </td>
+                          <td className="px-6 py-4">
+                          {t.type === 'income' ? 'Gelir' : 'Gider'}
+                          </td>
+                          <td className={`px-6 py-4 text-right font-bold ${
+                            isRecurring 
+                              ? 'text-yellow-500' 
+                              : t.type === 'income' 
+                                ? 'text-green-500' 
+                                : 'text-red-500'
+                          }`}>
+                          {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount, t.currency)}
+                          </td>
+                      </tr>
+                      );
+                    })}
                 </tbody>
                 </table>
             )}

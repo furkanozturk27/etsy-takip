@@ -20,6 +20,13 @@ export interface BusinessModel {
   type: 'income' | 'expense' | 'both';
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  type: 'income' | 'expense' | 'both';
+  created_at: string;
+}
+
 export interface RecurringExpense {
   id: string;
   name: string;
