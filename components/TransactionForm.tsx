@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { X, Loader2, Save } from 'lucide-react';
 import { Store, BusinessModel } from '@/types';
+import { USD_TRY_RATE } from '@/lib/utils';
 
 interface TransactionFormProps {
   isOpen: boolean;
@@ -82,10 +83,21 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
     setLoading(true);
 
     try {
+      const amountValue = parseFloat(amount);
+      let exchangeRate = 1.0; // USD için varsayılan
+      let amountBaseCurrency = amountValue; // USD cinsinden tutar
+
+      // Eğer para birimi TRY ise, kuru hesapla ve USD'ye çevir
+      if (currency === 'TRY') {
+        exchangeRate = USD_TRY_RATE;
+        amountBaseCurrency = amountValue / exchangeRate;
+      }
+
       const { error } = await supabase.from('transactions').insert({
         type,
-        amount: parseFloat(amount),
+        amount: amountValue,
         currency,
+        exchange_rate: exchangeRate,
         category,
         store_id: storeId,
         business_model_id: modelId || null, // Boş string ise null gönder
@@ -178,6 +190,24 @@ export default function TransactionForm({ isOpen, onClose, onSuccess }: Transact
               </select>
             </div>
           </div>
+
+          {/* Kur Oranı Bilgisi */}
+          {currency === 'TRY' && (
+            <div className="bg-muted/50 border border-border rounded-lg p-3 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Kur Oranı:</span>
+                <span className="font-mono font-semibold">1 USD = {USD_TRY_RATE.toFixed(2)} TRY</span>
+              </div>
+              {amount && !isNaN(parseFloat(amount)) && (
+                <div className="mt-2 flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground">USD Karşılığı:</span>
+                  <span className="font-mono font-semibold text-primary">
+                    ${(parseFloat(amount) / USD_TRY_RATE).toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

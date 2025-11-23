@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, convertToUSD, USD_TRY_RATE } from '@/lib/utils';
 import { AlertTriangle, ArrowUpRight, ArrowDownRight, DollarSign, TrendingUp, Plus, Loader2, Calendar, CheckCircle2, X } from 'lucide-react';
 import { Transaction, RecurringExpense } from '@/types';
 import TransactionForm from '@/components/TransactionForm';
@@ -92,11 +92,18 @@ export default function Dashboard() {
 
           // Eğer bu ay için henüz eklenmemişse
           if (!existingTransactions || existingTransactions.length === 0) {
+            // Exchange rate hesapla
+            let exchangeRate = 1.0;
+            if (expense.currency === 'TRY') {
+              exchangeRate = USD_TRY_RATE;
+            }
+            
             // Transaction ekle
             const { error: insertError } = await supabase.from('transactions').insert({
               type: 'expense',
               amount: expense.amount,
               currency: expense.currency,
+              exchange_rate: exchangeRate,
               category: expense.category,
               description: `${expense.name} (Otomatik Sabit Gider)`,
               transaction_date: format(today, 'yyyy-MM-dd'),
@@ -186,11 +193,19 @@ export default function Dashboard() {
     let lastSaleDate: Date | null = null; // Tipi Date | null olarak ayarla
 
     filteredTransactions.forEach(t => {
-      // Basit currency çevirimi (Şimdilik her şeyi USD gibi topluyoruz, ileride kur ekleriz)
-      const val = Number(t.amount);
+      // Her transaction'ın kendi para birimi ve exchange_rate değerini kullanarak
+      // Base Currency (USD) üzerinden hesaplama yap
+      const exchangeRate = t.exchange_rate && t.exchange_rate !== 1.0 
+        ? t.exchange_rate 
+        : (t.currency === 'TRY' ? USD_TRY_RATE : 1.0);
+      
+      // amount_base_currency sütunu olmadığı için t.amount / t.exchange_rate ile hesapla
+      const amountInUSD = t.currency === 'USD' 
+        ? Number(t.amount) 
+        : Number(t.amount) / exchangeRate;
       
       if (t.type === 'income') {
-        income += val;
+        income += amountInUSD;
         const tDate = new Date(t.transaction_date);
         // Sadece geçerli bir tarihse güncelle
         if (tDate && tDate instanceof Date && !isNaN(tDate.getTime())) {
@@ -199,7 +214,7 @@ export default function Dashboard() {
           }
         }
       } else {
-        expense += val;
+        expense += amountInUSD;
       }
     });
 
