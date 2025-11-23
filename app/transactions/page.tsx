@@ -83,7 +83,7 @@ export default function TransactionsPage() {
       // Transactions sorgusu oluştur
       let query = supabase
         .from('transactions')
-        .select('*, stores(name), business_models(name)')
+        .select('*, store:stores(name), business_model:business_models(name)')
         .order('transaction_date', { ascending: false });
 
       // Tarih filtresi
@@ -341,12 +341,12 @@ export default function TransactionsPage() {
                     <td className="px-6 py-4 font-medium">{formatDate(t.transaction_date)}</td>
                     <td className="px-6 py-4">
                       <span className="text-muted-foreground">
-                        {(t.stores as any)?.name || (t.store as any)?.name || '-'}
+                        {(t.store as any)?.name || '-'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-muted-foreground">
-                        {(t.business_models as any)?.name || (t.business_model as any)?.name || '-'}
+                        {(t.business_model as any)?.name || '-'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
