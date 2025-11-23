@@ -1,0 +1,8 @@
+# netlify.toml
+
+[build]
+  # Build komutu
+  command = "npm run build"
+  # Yayınlanacak dosyaların bulunduğu klasör (404 hatasının kaynağı)
+  publish = ".next"
+
