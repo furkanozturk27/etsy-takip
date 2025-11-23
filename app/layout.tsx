@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/layout/Sidebar";
+import PinGuard from "@/components/PinGuard";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -27,10 +28,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={cn(inter.className, "bg-background text-foreground flex")}>
-        <Sidebar />
-        <main className="flex-1 ml-64 p-8 min-h-screen">
-          {children}
-        </main>
+        <PinGuard>
+          <Sidebar />
+          <main className="flex-1 ml-64 p-8 min-h-screen">
+            {children}
+          </main>
+        </PinGuard>
       </body>
     </html>
   );
