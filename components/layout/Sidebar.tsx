@@ -1,11 +1,12 @@
 import Link from 'next/link';
-import { LayoutDashboard, Wallet, ShoppingBag, Layers, Lightbulb, Settings, CalendarRange } from 'lucide-react';
+import { LayoutDashboard, Wallet, ShoppingBag, Layers, Lightbulb, Settings, CalendarRange, Tag } from 'lucide-react';
 
 const menuItems = [
   { name: 'Genel Bakış', icon: LayoutDashboard, href: '/' },
   { name: 'Gelir & Gider', icon: Wallet, href: '/transactions' },
   { name: 'Mağazalar', icon: ShoppingBag, href: '/stores' },
   { name: 'İş Modelleri', icon: Layers, href: '/models' },
+  { name: 'Kategoriler', icon: Tag, href: '/categories' },
   { name: 'Sabit Giderler', icon: CalendarRange, href: '/subscriptions' },
   { name: 'Hedefler & Fikirler', icon: Lightbulb, href: '/ideas' },
 ];
