@@ -121,7 +121,7 @@ export default function CategoriesPage() {
         </button>
       </div>
 
-      {/* KATEGORİLER LİSTESİ */}
+      {/* KATEGORİLER TABLOSU */}
       {categories.length === 0 ? (
         <div className="bg-card border rounded-xl p-12 text-center">
           <Tag className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
@@ -133,45 +133,53 @@ export default function CategoriesPage() {
           <div className="p-6 border-b border-border">
             <h3 className="font-semibold text-lg">Kategoriler ({categories.length})</h3>
           </div>
-          <div className="divide-y divide-border">
-            {categories.map((category) => (
-              <div 
-                key={category.id} 
-                className="p-6 hover:bg-muted/50 transition-colors flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold mb-1">{category.name}</h3>
-                    <div className="flex items-center gap-2">
+          <div className="relative w-full overflow-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-muted-foreground bg-muted/50 uppercase text-xs">
+                <tr>
+                  <th className="px-6 py-3">Kategori Adı</th>
+                  <th className="px-6 py-3">Tip</th>
+                  <th className="px-6 py-3">Oluşturulma Tarihi</th>
+                  <th className="px-6 py-3 text-right">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {categories.map((category) => (
+                  <tr 
+                    key={category.id} 
+                    className="hover:bg-muted/50 transition-colors"
+                  >
+                    <td className="px-6 py-4 font-medium">{category.name}</td>
+                    <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs border ${getTypeColor(category.type)}`}>
                         {getTypeLabel(category.type)}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(category.created_at)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* İşlem Butonları */}
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => handleEdit(category)}
-                    className="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors"
-                    title="Düzenle"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(category.id)}
-                    className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors"
-                    title="Sil"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">
+                      {formatDate(category.created_at)}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEdit(category)}
+                          className="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors"
+                          title="Düzenle"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(category.id)}
+                          className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors"
+                          title="Sil"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
