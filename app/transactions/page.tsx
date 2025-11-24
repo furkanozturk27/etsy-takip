@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, USD_TRY_RATE } from '@/lib/utils';
 import { Plus, Loader2, Trash2, Wallet, ArrowUpRight, ArrowDownRight, DollarSign, Filter, Pencil } from 'lucide-react';
 import { Transaction, Store, BusinessModel } from '@/types';
 import TransactionForm from '@/components/TransactionForm';
@@ -132,10 +132,16 @@ export default function TransactionsPage() {
 
     transactions.forEach(t => {
       const val = Number(t.amount);
+      // Kur dönüşümü: USD ise direkt, değilse exchange_rate'e böl
+      // exchange_rate yoksa (eski kayıt) ve TRY ise sabit kuru kullan
+      const amountInUSD = t.currency === 'USD' 
+        ? val 
+        : val / (t.exchange_rate || (t.currency === 'TRY' ? USD_TRY_RATE : 1));
+      
       if (t.type === 'income') {
-        income += val;
+        income += amountInUSD;
       } else {
-        expense += val;
+        expense += amountInUSD;
       }
     });
 

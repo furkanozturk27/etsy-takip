@@ -193,16 +193,12 @@ export default function Dashboard() {
     let lastSaleDate: Date | null = null; // Tipi Date | null olarak ayarla
 
     filteredTransactions.forEach(t => {
-      // Her transaction'ın kendi para birimi ve exchange_rate değerini kullanarak
-      // Base Currency (USD) üzerinden hesaplama yap
-      const exchangeRate = t.exchange_rate && t.exchange_rate !== 1.0 
-        ? t.exchange_rate 
-        : (t.currency === 'TRY' ? USD_TRY_RATE : 1.0);
-      
-      // amount_base_currency sütunu olmadığı için t.amount / t.exchange_rate ile hesapla
+      const val = Number(t.amount);
+      // Kur dönüşümü: USD ise direkt, değilse exchange_rate'e böl
+      // exchange_rate yoksa (eski kayıt) ve TRY ise sabit kuru kullan
       const amountInUSD = t.currency === 'USD' 
-        ? Number(t.amount) 
-        : Number(t.amount) / exchangeRate;
+        ? val 
+        : val / (t.exchange_rate || (t.currency === 'TRY' ? USD_TRY_RATE : 1));
       
       if (t.type === 'income') {
         income += amountInUSD;
@@ -391,7 +387,7 @@ export default function Dashboard() {
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                    {filteredTransactions.map((t) => {
+                    {filteredTransactions.slice(0, 10).map((t) => {
                       // Otomatik Sabit Gider kontrolü (description'da "(Otomatik Sabit Gider)" varsa)
                       const isRecurring = t.description?.includes('(Otomatik Sabit Gider)') || false;
                       
